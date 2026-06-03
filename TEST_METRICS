@@ -1,0 +1,18 @@
+tokens por caractere
+caracteres por token
+tokens por palavra
+quantidade de tokens para código
+quantidade de tokens para português jurídico
+quantidade de tokens para português técnico
+round-trip encode/decode
+
+O mais importante:
+decode(encode(text)) ≈ text original
+
+
+Valores ruins seriam algo como:
+
+tokens demais por palavra
+palavras comuns quebradas em muitos pedaços
+símbolos comuns virando fragmentos estranhos demais
+acentos causando explosão de tokens

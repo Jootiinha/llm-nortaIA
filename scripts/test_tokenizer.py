@@ -1,0 +1,44 @@
+from transformers import GPT2TokenizerFast
+
+TOKENIZER_DIR = "tokenizer/joao-tokenizer-bpe"
+
+tokenizer = GPT2TokenizerFast(
+    vocab_file=f"{TOKENIZER_DIR}/vocab.json",
+    merges_file=f"{TOKENIZER_DIR}/merges.txt",
+    tokenizer_file=f"{TOKENIZER_DIR}/tokenizer.json",
+    bos_token="<s>",
+    eos_token="</s>",
+    unk_token="<unk>",
+    pad_token="<pad>",
+    mask_token="<mask>",
+)
+
+tests = [
+    "Olá, João! Tudo bem?",
+    "A inteligência artificial aplicada à engenharia de dados pode otimizar pipelines.",
+    "SELECT * FROM tabela WHERE created_at >= '2026-01-01';",
+    "kubectl get pods -n ifp-ona-merchant",
+    "Ação de guarda com pedido de tutela provisória.",
+    "R$ 1.234,56 — São Paulo/SP — parâmetro, função, execução.",
+    '{"merchant_id": "123", "status": "APPROVED", "amount": 159.90}',
+]
+
+for text in tests:
+    encoded = tokenizer.encode(text)
+    decoded = tokenizer.decode(encoded)
+
+    print("=" * 80)
+    print("Texto original:")
+    print(text)
+    print()
+    print("Tokens:")
+    print(tokenizer.convert_ids_to_tokens(encoded))
+    print()
+    print("IDs:")
+    print(encoded)
+    print()
+    print("Decoded:")
+    print(decoded)
+    print()
+    print("Qtd tokens:", len(encoded))
+    print("Chars/token:", round(len(text) / max(len(encoded), 1), 2))
