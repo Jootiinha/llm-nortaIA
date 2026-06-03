@@ -81,7 +81,6 @@ def build_training_arguments(args) -> TrainingArguments:
         "save_total_limit": args.save_total_limit,
         "prediction_loss_only": True,
         "report_to": "tensorboard",
-        "logging_dir": str(Path(args.output_dir) / "tb"),
         "remove_unused_columns": False,
         "dataloader_num_workers": args.dataloader_num_workers,
         "save_safetensors": True,
@@ -279,11 +278,13 @@ class PerformanceCallback(TrainerCallback):
 
 def main():
     cli_args = parse_args()
-    config = load_config(cli_args.config)
-    args = build_args_from_config(config)
+    experiment_config = load_config(cli_args.config)
+    args = build_args_from_config(experiment_config)
     set_seed(args.seed)
+    tensorboard_log_dir = str(Path(args.output_dir) / "tb")
+    os.environ["TENSORBOARD_LOGGING_DIR"] = tensorboard_log_dir
     training_args = build_training_arguments(args)
-    writer = SummaryWriter(log_dir=training_args.logging_dir)
+    writer = SummaryWriter(log_dir=tensorboard_log_dir)
 
     train_path = Path(args.train_file)
     valid_path = Path(args.valid_file)
@@ -304,7 +305,7 @@ def main():
     writer.add_scalar("run/batch_size", float(args.batch_size), 0)
     writer.flush()
 
-    config = GPT2Config(
+    model_config = GPT2Config(
         vocab_size=len(tokenizer),
         n_positions=args.block_size,
         n_ctx=args.block_size,
@@ -316,7 +317,7 @@ def main():
         pad_token_id=tokenizer.pad_token_id,
     )
 
-    model = GPT2LMHeadModel(config)
+    model = GPT2LMHeadModel(model_config)
     model.resize_token_embeddings(len(tokenizer))
     model.config.loss_type = "ForCausalLM"
     model.loss_type = "ForCausalLM"
@@ -325,7 +326,7 @@ def main():
     print("=" * 80)
     print("CONFIGURACAO DO MODELO")
     print("=" * 80)
-    print(f"Config: {config['name']}")
+    print(f"Config: {experiment_config['name']}")
     print(f"Parâmetros: {num_params / 1_000_000:.2f}M")
     print(f"Vocab size: {len(tokenizer)}")
     print(f"Contexto: {args.block_size}")
@@ -510,11 +511,14 @@ def main():
     trainer.save_model(args.output_dir)
     tokenizer.save_pretrained(args.output_dir)
 
-    print(f"TensorBoard log dir: {training_args.logging_dir}")
+    print(f"TensorBoard log dir: {tensorboard_log_dir}")
     print(f"Modelo salvo em: {args.output_dir}")
     print("Proximo passo:")
     print("1. make tensorboard")
-    print(f"2. poetry run python -B scripts/generate.py --config {config['_config_path']}")
+    print(
+        "2. poetry run python -B scripts/generate.py "
+        f"--config {experiment_config['_config_path']}"
+    )
     writer.flush()
     writer.close()
 
