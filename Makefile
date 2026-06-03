@@ -6,6 +6,7 @@ help:
 	@echo "make download_corpus # baixa corpus do Hugging Face Hub"
 	@echo "make preprocess      # roda preprocessamento"
 	@echo "make train-tokenizer # treina tokenizer"
+	@echo "make tensorboard     # abre tensorboard em checkpoints/"
 	@echo "make pretrain        # executa pipeline de pre-treino"
 	@echo "make finetune        # executa pipeline de fine-tune"
 
@@ -38,3 +39,6 @@ train_model:
 		--n-head 4 \
 		--n-embd 256 \
 		--batch-size 2
+
+tensorboard:
+	poetry run tensorboard --logdir checkpoints --port 6006
