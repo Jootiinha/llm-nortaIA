@@ -1,0 +1,81 @@
+name: joao-gpt-mini-v1
+
+paths:
+  tokenizer_corpus_dir: data/tokenizer_corpus
+  tokenizer_dir: tokenizer/joao-gpt-mini-v1-tokenizer-bpe
+  train_file: data/joao-gpt-mini-v1/train.txt
+  valid_file: data/joao-gpt-mini-v1/valid.txt
+  output_dir: checkpoints/joao-gpt-mini-v1
+  eval_file: data/tokenizer_corpus/pt_corpus_instruct_sample.txt
+
+corpus:
+  pt_dataset: nicholasKluge/Pt-Corpus-Instruct
+  pt_split: train
+  pt_output_file: pt_corpus_instruct_sample.txt
+  pt_max_mb: 800
+  gigaverbo_dataset: TucanoBR/GigaVerbo-Text-Filter
+  gigaverbo_split: train
+  gigaverbo_output_file: gigaverbo_filter_high_quality.txt
+  gigaverbo_max_mb: 200
+  gigaverbo_min_score: 0.75
+  min_text_chars: 200
+
+tokenizer:
+  vocab_size: 32000
+  min_frequency: 2
+  special_tokens:
+    - "<s>"
+    - "<pad>"
+    - "</s>"
+    - "<unk>"
+    - "<mask>"
+
+tokenizer_test:
+  samples:
+    - "Olá, João! Tudo bem?"
+    - "A inteligência artificial aplicada à engenharia de dados pode otimizar pipelines."
+    - "SELECT * FROM tabela WHERE created_at >= '2026-01-01';"
+    - "kubectl get pods -n ifp-ona-merchant"
+    - "Ação de guarda com pedido de tutela provisória."
+    - "R$ 1.234,56 — São Paulo/SP — parâmetro, função, execução."
+    - '{"merchant_id": "123", "status": "APPROVED", "amount": 159.90}'
+
+tokenizer_eval:
+  max_samples: 1000
+
+dataset_prep:
+  valid_ratio: 0.01
+  min_chars: 200
+  seed: 42
+
+train:
+  block_size: 512
+  n_layer: 4
+  n_head: 4
+  n_embd: 256
+  batch_size: 2
+  eval_batch_size: 4
+  gradient_accumulation_steps: 8
+  learning_rate: 0.0003
+  weight_decay: 0.1
+  warmup_steps: 500
+  max_steps: 500
+  logging_steps: 50
+  eval_steps: 100
+  save_steps: 250
+  save_total_limit: 3
+  num_proc: 1
+  dataloader_num_workers: 0
+  seed: 42
+  bf16: false
+  fp16: false
+
+generation:
+  prompt: "A inteligência artificial no Brasil"
+  max_new_tokens: 200
+  temperature: 0.8
+  top_p: 0.95
+  top_k: 50
+  repetition_penalty: 1.1
+  seed:
+  device: auto

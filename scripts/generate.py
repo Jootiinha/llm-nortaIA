@@ -4,6 +4,8 @@ import random
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, set_seed
 
+from config_utils import load_config
+
 
 def get_device(device_arg: str) -> str:
     if device_arg != "auto":
@@ -19,85 +21,31 @@ def get_device(device_arg: str) -> str:
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Gera texto com o modelo treinado."
-    )
-
-    parser.add_argument(
-        "--model-dir",
-        default="checkpoints/joao-gpt-mini",
-        help="Diretório do checkpoint treinado.",
-    )
-
-    parser.add_argument(
-        "--prompt",
-        default="A inteligência artificial aplicada à engenharia de dados",
-        help="Prompt inicial.",
-    )
-
-    parser.add_argument(
-        "--max-new-tokens",
-        type=int,
-        default=200,
-        help="Quantidade máxima de tokens novos.",
-    )
-
-    parser.add_argument(
-        "--temperature",
-        type=float,
-        default=0.8,
-        help="Temperatura da geração.",
-    )
-
-    parser.add_argument(
-        "--top-p",
-        type=float,
-        default=0.95,
-        help="Nucleus sampling.",
-    )
-
-    parser.add_argument(
-        "--top-k",
-        type=int,
-        default=50,
-        help="Top-k sampling.",
-    )
-
-    parser.add_argument(
-        "--repetition-penalty",
-        type=float,
-        default=1.1,
-        help="Penalidade para repetição.",
-    )
-
-    parser.add_argument(
-        "--seed",
-        type=int,
-        default=None,
-        help="Seed opcional.",
-    )
-
-    parser.add_argument(
-        "--device",
-        default="auto",
-        help="auto, cuda, cpu ou mps.",
-    )
-
+    parser = argparse.ArgumentParser(description="Gera texto com config YAML.")
+    parser.add_argument("--config", default=None)
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
+    config = load_config(args.config)
+    paths = config["paths"]
+    generation_cfg = config.get("generation", {})
 
-    if args.seed is None:
-        args.seed = random.randint(1, 10_000_000)
+    seed = generation_cfg.get("seed")
+    if seed is None:
+        seed = random.randint(1, 10_000_000)
 
-    set_seed(args.seed)
+    set_seed(seed)
+    device = get_device(generation_cfg.get("device", "auto"))
+    model_dir = paths["output_dir"]
+    prompt = generation_cfg.get(
+        "prompt",
+        "A inteligência artificial aplicada à engenharia de dados",
+    )
 
-    device = get_device(args.device)
-
-    tokenizer = AutoTokenizer.from_pretrained(args.model_dir)
-    model = AutoModelForCausalLM.from_pretrained(args.model_dir)
+    tokenizer = AutoTokenizer.from_pretrained(model_dir)
+    model = AutoModelForCausalLM.from_pretrained(model_dir)
 
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -105,17 +53,17 @@ def main():
     model.to(device)
     model.eval()
 
-    inputs = tokenizer(args.prompt, return_tensors="pt").to(device)
+    inputs = tokenizer(prompt, return_tensors="pt").to(device)
 
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
-            max_new_tokens=args.max_new_tokens,
+            max_new_tokens=generation_cfg.get("max_new_tokens", 200),
             do_sample=True,
-            temperature=args.temperature,
-            top_p=args.top_p,
-            top_k=args.top_k,
-            repetition_penalty=args.repetition_penalty,
+            temperature=generation_cfg.get("temperature", 0.8),
+            top_p=generation_cfg.get("top_p", 0.95),
+            top_k=generation_cfg.get("top_k", 50),
+            repetition_penalty=generation_cfg.get("repetition_penalty", 1.1),
             pad_token_id=tokenizer.pad_token_id,
             eos_token_id=tokenizer.eos_token_id,
         )
@@ -123,27 +71,27 @@ def main():
     generated = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
     print("=" * 80)
-    print("PROMPT")
+    print("CONFIG")
     print("=" * 80)
-    print(args.prompt)
+    print(config["name"])
 
     print("\n" + "=" * 80)
-    print("GERAÇÃO")
+    print("PROMPT")
+    print("=" * 80)
+    print(prompt)
+
+    print("\n" + "=" * 80)
+    print("GERACAO")
     print("=" * 80)
     print(generated)
 
     print("\n" + "=" * 80)
     print("INFO")
     print("=" * 80)
-    print(f"Modelo: {args.model_dir}")
+    print(f"Modelo: {model_dir}")
     print(f"Device: {device}")
-    print(f"Seed: {args.seed}")
+    print(f"Seed: {seed}")
 
 
 if __name__ == "__main__":
     main()
-
-
-#python scripts/generate.py \
-#   --prompt "Explique de forma simples o que é um modelo de linguagem" \
-#   --max-new-tokens 150

@@ -20,6 +20,8 @@ from transformers import (
     set_seed,
 )
 
+from config_utils import load_config
+
 
 def load_tokenizer(tokenizer_dir: str) -> GPT2TokenizerFast:
     tokenizer_path = Path(tokenizer_dir)
@@ -113,43 +115,41 @@ def build_training_arguments(args) -> TrainingArguments:
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Treina um modelo GPT decoder-only do zero."
-    )
-
-    parser.add_argument("--tokenizer-dir", default="tokenizer/joao-tokenizer-bpe")
-    parser.add_argument("--train-file", default="data/train.txt")
-    parser.add_argument("--valid-file", default="data/valid.txt")
-    parser.add_argument("--output-dir", default="checkpoints/joao-gpt-mini")
-
-    parser.add_argument("--block-size", type=int, default=512)
-
-    parser.add_argument("--n-layer", type=int, default=6)
-    parser.add_argument("--n-head", type=int, default=6)
-    parser.add_argument("--n-embd", type=int, default=384)
-
-    parser.add_argument("--batch-size", type=int, default=4)
-    parser.add_argument("--eval-batch-size", type=int, default=4)
-    parser.add_argument("--gradient-accumulation-steps", type=int, default=8)
-
-    parser.add_argument("--learning-rate", type=float, default=3e-4)
-    parser.add_argument("--weight-decay", type=float, default=0.1)
-    parser.add_argument("--warmup-steps", type=int, default=500)
-    parser.add_argument("--max-steps", type=int, default=20_000)
-
-    parser.add_argument("--logging-steps", type=int, default=50)
-    parser.add_argument("--eval-steps", type=int, default=500)
-    parser.add_argument("--save-steps", type=int, default=1000)
-    parser.add_argument("--save-total-limit", type=int, default=3)
-
-    parser.add_argument("--num-proc", type=int, default=1)
-    parser.add_argument("--dataloader-num-workers", type=int, default=0)
-
-    parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--bf16", action="store_true")
-    parser.add_argument("--fp16", action="store_true")
-
+    parser = argparse.ArgumentParser(description="Treina um modelo GPT via config YAML.")
+    parser.add_argument("--config", default=None)
     return parser.parse_args()
+
+
+def build_args_from_config(config: dict[str, Any]) -> argparse.Namespace:
+    paths = config["paths"]
+    train_cfg = config.get("train", {})
+    return argparse.Namespace(
+        config_name=config["name"],
+        tokenizer_dir=paths["tokenizer_dir"],
+        train_file=paths["train_file"],
+        valid_file=paths["valid_file"],
+        output_dir=paths["output_dir"],
+        block_size=train_cfg.get("block_size", 512),
+        n_layer=train_cfg.get("n_layer", 6),
+        n_head=train_cfg.get("n_head", 6),
+        n_embd=train_cfg.get("n_embd", 384),
+        batch_size=train_cfg.get("batch_size", 4),
+        eval_batch_size=train_cfg.get("eval_batch_size", 4),
+        gradient_accumulation_steps=train_cfg.get("gradient_accumulation_steps", 8),
+        learning_rate=train_cfg.get("learning_rate", 3e-4),
+        weight_decay=train_cfg.get("weight_decay", 0.1),
+        warmup_steps=train_cfg.get("warmup_steps", 500),
+        max_steps=train_cfg.get("max_steps", 20_000),
+        logging_steps=train_cfg.get("logging_steps", 50),
+        eval_steps=train_cfg.get("eval_steps", 500),
+        save_steps=train_cfg.get("save_steps", 1000),
+        save_total_limit=train_cfg.get("save_total_limit", 3),
+        num_proc=train_cfg.get("num_proc", 1),
+        dataloader_num_workers=train_cfg.get("dataloader_num_workers", 0),
+        seed=train_cfg.get("seed", 42),
+        bf16=train_cfg.get("bf16", False),
+        fp16=train_cfg.get("fp16", False),
+    )
 
 
 class PerformanceCallback(TrainerCallback):
@@ -278,7 +278,9 @@ class PerformanceCallback(TrainerCallback):
 
 
 def main():
-    args = parse_args()
+    cli_args = parse_args()
+    config = load_config(cli_args.config)
+    args = build_args_from_config(config)
     set_seed(args.seed)
     training_args = build_training_arguments(args)
     writer = SummaryWriter(log_dir=training_args.logging_dir)
@@ -323,6 +325,7 @@ def main():
     print("=" * 80)
     print("CONFIGURACAO DO MODELO")
     print("=" * 80)
+    print(f"Config: {config['name']}")
     print(f"Parâmetros: {num_params / 1_000_000:.2f}M")
     print(f"Vocab size: {len(tokenizer)}")
     print(f"Contexto: {args.block_size}")
@@ -511,7 +514,7 @@ def main():
     print(f"Modelo salvo em: {args.output_dir}")
     print("Proximo passo:")
     print("1. make tensorboard")
-    print(f"2. python scripts/generate.py --model-dir {args.output_dir}")
+    print(f"2. poetry run python -B scripts/generate.py --config {config['_config_path']}")
     writer.flush()
     writer.close()
 

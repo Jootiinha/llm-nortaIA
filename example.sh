@@ -1,21 +1,13 @@
-python scripts/prepare_tokenizer_corpus.py --pt-mb 100 --giga-mb 25
+make download_corpus model_name=joao-gpt-mini-v1
 
-python scripts/train_tokenizer.py
+make train_tokenizer model_name=joao-gpt-mini-v1
 
-python scripts/test_tokenizer.py
+make test_tokenizer model_name=joao-gpt-mini-v1
 
-python scripts/evaluate_tokenizer.py
+make evaluate_tokenizer model_name=joao-gpt-mini-v1
 
-python scripts/prepare_train_valid.py
+make prepare_train_valid model_name=joao-gpt-mini-v1
 
-python scripts/train_model.py \
-  --max-steps 500 \
-  --eval-steps 100 \
-  --save-steps 250 \
-  --n-layer 4 \
-  --n-head 4 \
-  --n-embd 256 \
-  --batch-size 2
+make train_model model_name=joao-gpt-mini-v1
 
-python scripts/generate.py \
-  --prompt "A inteligência artificial no Brasil"
+make generate model_name=joao-gpt-mini-v1

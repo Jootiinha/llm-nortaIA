@@ -1,6 +1,6 @@
 # Metrics
 
-Este projeto agora registra metricas de desempenho do treino em TensorBoard a partir de [scripts/train_model.py](/Users/joaocrm/Documents/dev/estudos/llm-nortaIA/scripts/train_model.py).
+Este projeto agora registra metricas de desempenho do treino em TensorBoard a partir de [scripts/train_model.py](/Users/joaocrm/Documents/dev/estudos/llm-nortaIA/scripts/train_model.py). As configuracoes da run ficam em `configs/models/*.yaml`.
 
 ## Como usar
 
@@ -10,10 +10,10 @@ Instale as dependencias:
 make install
 ```
 
-Rode o treino:
+Escolha uma configuracao, por exemplo `joao-gpt-mini-v1`, e rode o treino:
 
 ```bash
-make train_model
+make train_model model_name=joao-gpt-mini-v1
 ```
 
 Em outro terminal, abra o TensorBoard:
@@ -27,6 +27,11 @@ Logs gerados:
 ```text
 checkpoints/<nome-do-modelo>/tb
 ```
+
+Exemplos de configs:
+
+- [joao-gpt-mini-v1.yaml](/Users/joaocrm/Documents/dev/estudos/llm-nortaIA/configs/models/joao-gpt-mini-v1.yaml)
+- [joao-gpt-mini-v2.yaml](/Users/joaocrm/Documents/dev/estudos/llm-nortaIA/configs/models/joao-gpt-mini-v2.yaml)
 
 ## Metricas registradas
 

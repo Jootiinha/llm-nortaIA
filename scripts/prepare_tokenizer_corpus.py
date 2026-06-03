@@ -1,19 +1,15 @@
+import argparse
 import os
 import sys
-import warnings
 from pathlib import Path
 
 from datasets import load_dataset
 from dotenv import load_dotenv
 from tqdm import tqdm
 
+from config_utils import load_config
+
 load_dotenv(dotenv_path=Path(".env"))
-
-OUTPUT_DIR = Path("./data/tokenizer_corpus")
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
-MAX_BYTES_PT_CORPUS = 800 * 1024 * 1024  # 800MB
-MAX_BYTES_GIGAVERBO = 200 * 1024 * 1024  # 200MB
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 
@@ -27,20 +23,24 @@ def clean_text(text: str) -> str:
 
 
 def write_stream_sample(
+    output_dir: Path,
     dataset_name: str,
+    split: str,
     output_name: str,
     max_bytes: int,
     description: str,
+    min_text_chars: int,
     min_score: float | None = None,
 ) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
     dataset = load_dataset(
         dataset_name,
-        split="train",
+        split=split,
         streaming=True,
         token=HF_TOKEN,
     )
 
-    output_path = OUTPUT_DIR / output_name
+    output_path = output_dir / output_name
     written = 0
     iterator = iter(dataset)
 
@@ -57,8 +57,7 @@ def write_stream_sample(
                     continue
 
                 text = clean_text(text)
-
-                if len(text) < 200:
+                if len(text) < min_text_chars:
                     continue
 
                 block = text + "\n\n"
@@ -77,19 +76,45 @@ def write_stream_sample(
     print(f"{description} salvo: {written / 1024 / 1024:.2f} MB")
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Baixa corpus via config YAML.")
+    parser.add_argument("--config", default=None)
+    return parser.parse_args()
+
+
 def main() -> None:
+    args = parse_args()
+    config = load_config(args.config)
+    paths = config["paths"]
+    corpus_cfg = config.get("corpus", {})
+    output_dir = Path(paths["tokenizer_corpus_dir"])
+    min_text_chars = corpus_cfg.get("min_text_chars", 200)
+
+    print(f"Config: {config['name']}")
     write_stream_sample(
-        dataset_name="TucanoBR/GigaVerbo-Text-Filter",
-        output_name="gigaverbo_filter_high_quality.txt",
-        max_bytes=MAX_BYTES_GIGAVERBO,
+        output_dir=output_dir,
+        dataset_name=corpus_cfg.get("gigaverbo_dataset", "TucanoBR/GigaVerbo-Text-Filter"),
+        split=corpus_cfg.get("gigaverbo_split", "train"),
+        output_name=corpus_cfg.get(
+            "gigaverbo_output_file",
+            "gigaverbo_filter_high_quality.txt",
+        ),
+        max_bytes=corpus_cfg.get("gigaverbo_max_mb", 200) * 1024 * 1024,
         description="GigaVerbo",
-        min_score=0.75,
+        min_text_chars=min_text_chars,
+        min_score=corpus_cfg.get("gigaverbo_min_score", 0.75),
     )
     write_stream_sample(
-        dataset_name="nicholasKluge/Pt-Corpus-Instruct",
-        output_name="pt_corpus_instruct_sample.txt",
-        max_bytes=MAX_BYTES_PT_CORPUS,
+        output_dir=output_dir,
+        dataset_name=corpus_cfg.get("pt_dataset", "nicholasKluge/Pt-Corpus-Instruct"),
+        split=corpus_cfg.get("pt_split", "train"),
+        output_name=corpus_cfg.get(
+            "pt_output_file",
+            "pt_corpus_instruct_sample.txt",
+        ),
+        max_bytes=corpus_cfg.get("pt_max_mb", 800) * 1024 * 1024,
         description="Pt-Corpus",
+        min_text_chars=min_text_chars,
     )
     print("Download concluido.")
 
