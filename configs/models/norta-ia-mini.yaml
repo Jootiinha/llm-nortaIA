@@ -1,11 +1,11 @@
-name: joao-gpt-mini-v2
+name: norta-ia-mini
 
 paths:
   tokenizer_corpus_dir: data/tokenizer_corpus
-  tokenizer_dir: tokenizer/joao-gpt-mini-v2-tokenizer-bpe
-  train_file: data/joao-gpt-mini-v2/train.txt
-  valid_file: data/joao-gpt-mini-v2/valid.txt
-  output_dir: checkpoints/joao-gpt-mini-v2
+  tokenizer_dir: tokenizer/norta-ia-mini-tokenizer-bpe
+  train_file: data/norta-ia-mini/train.txt
+  valid_file: data/norta-ia-mini/valid.txt
+  output_dir: checkpoints/norta-ia-mini
   eval_file: data/tokenizer_corpus/pt_corpus_instruct_sample.txt
 
 corpus:
@@ -17,7 +17,7 @@ corpus:
   gigaverbo_split: train
   gigaverbo_output_file: gigaverbo_filter_high_quality.txt
   gigaverbo_max_mb: 200
-  gigaverbo_min_score: 0.8
+  gigaverbo_min_score: 0.75
   min_text_chars: 200
 
 tokenizer:
@@ -50,16 +50,16 @@ dataset_prep:
 
 train:
   block_size: 512
-  n_layer: 6
-  n_head: 6
-  n_embd: 384
+  n_layer: 4
+  n_head: 4
+  n_embd: 256
   batch_size: 2
   eval_batch_size: 4
   gradient_accumulation_steps: 8
-  learning_rate: 0.00025
+  learning_rate: 0.0003
   weight_decay: 0.1
   warmup_steps: 500
-  max_steps: 750
+  max_steps: 500
   logging_steps: 50
   eval_steps: 100
   save_steps: 250
