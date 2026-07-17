@@ -12,7 +12,7 @@ dependencies = [
     "tensorboard",
     "sentencepiece",
     "tokenizers",
-    "torch>=2.0",
+    "torch>=2.13.0",
     "accelerate",
     "deepspeed",
     "peft",
